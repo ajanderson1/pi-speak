@@ -1,0 +1,11 @@
+apiVersion: agent-toolkit/v1alpha2
+metadata:
+  name: pi-speak
+  description: Speaks concise, secret-safe summaries of completed Pi responses.
+  lifecycle: experimental
+  license: MIT
+spec:
+  origin: first-party
+  vendored_via: none
+  harnesses:
+    - pi
