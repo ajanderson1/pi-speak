@@ -1,0 +1,17 @@
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+
+# Local settings and verification evidence
+.env
+.env.local
+.env.*.local
+.worktrees/
+assets/verification/
+
+# OS and editors
+.DS_Store
+.vscode/
+.idea/
+*.swp
