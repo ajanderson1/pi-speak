@@ -18,12 +18,15 @@ export interface AudioDependencies {
   readonly start?: (command: string, args: readonly string[]) => RunningProcess;
   readonly remove?: (path: string) => Promise<void>;
   readonly player?: string;
+  readonly detectPlayer?: () => Promise<string | undefined>;
 }
 
 interface Job {
   readonly text: string;
   readonly settings: AudioSettings;
 }
+
+let detectedPlayer: Promise<string | undefined> | undefined;
 
 function defaultStart(
   command: string,
@@ -39,11 +42,31 @@ function defaultStart(
   };
 }
 
+function commandExists(command: string): Promise<boolean> {
+  const child = spawn("which", [command], { stdio: "ignore" });
+  return new Promise((resolve) => {
+    child.once("error", () => resolve(false));
+    child.once("exit", (code) => resolve(code === 0));
+  });
+}
+
+async function defaultDetectPlayer(): Promise<string | undefined> {
+  const candidates =
+    process.platform === "darwin"
+      ? ["afplay", "ffplay", "mpv", "paplay"]
+      : ["ffplay", "mpv", "paplay"];
+  for (const candidate of candidates) {
+    if (await commandExists(candidate)) return candidate;
+  }
+  return undefined;
+}
+
 export class AudioQueue {
   private readonly queue: Job[] = [];
   private readonly start: NonNullable<AudioDependencies["start"]>;
   private readonly remove: NonNullable<AudioDependencies["remove"]>;
-  private readonly player: string;
+  private readonly configuredPlayer: string | undefined;
+  private readonly detectPlayer: () => Promise<string | undefined>;
   private active = false;
   private paused = false;
   private generation = 0;
@@ -52,9 +75,13 @@ export class AudioQueue {
   constructor(dependencies: AudioDependencies = {}) {
     this.start = dependencies.start ?? defaultStart;
     this.remove = dependencies.remove ?? ((path) => rm(path, { force: true }));
-    this.player =
-      dependencies.player ??
-      (process.platform === "darwin" ? "afplay" : "ffplay");
+    this.configuredPlayer = dependencies.player;
+    this.detectPlayer =
+      dependencies.detectPlayer ??
+      (() => {
+        detectedPlayer ??= defaultDetectPlayer();
+        return detectedPlayer;
+      });
   }
 
   get pendingCount(): number {
@@ -118,11 +145,15 @@ export class AudioQueue {
         mediaPath,
       ]);
       if (generation !== this.generation) return;
+      const player = this.configuredPlayer ?? (await this.detectPlayer());
+      if (!player || generation !== this.generation) return;
       await this.run(
-        this.player,
-        this.player === "ffplay"
+        player,
+        player === "ffplay"
           ? ["-nodisp", "-autoexit", mediaPath]
-          : [mediaPath],
+          : player === "mpv"
+            ? ["--no-video", mediaPath]
+            : [mediaPath],
       );
     } catch {
       // Playback is best effort and must never affect Pi.

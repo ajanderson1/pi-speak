@@ -13,6 +13,7 @@ describe("AudioQueue", () => {
     const queue = new AudioQueue({
       start,
       remove: vi.fn(async () => undefined),
+      player: "afplay",
     });
 
     await queue.enqueue("first", { voice: "voice", rate: "+5%" });
@@ -31,6 +32,7 @@ describe("AudioQueue", () => {
   it("pauses and resumes the active process", () => {
     let process: RunningProcess | undefined;
     const queue = new AudioQueue({
+      player: "afplay",
       start: () => {
         process = { done: new Promise(() => undefined), kill: vi.fn() };
         return process;
