@@ -10,12 +10,14 @@ describe("redactForExternalUse", () => {
     expect(result.safe).toBe(true);
   });
 
-  it("redacts authorization and password values", () => {
+  it("redacts every authorization header plus password and prefixed API key values", () => {
     const result = redactForExternalUse(
-      "Authorization: Bearer example-token\npassword: example-password",
+      "Authorization: Token example-token\npassword: example-password\nOPENAI_API_KEY=example-key",
     );
 
-    expect(result.text).toBe("Authorization: [redacted]\npassword: [redacted]");
+    expect(result.text).toBe(
+      "Authorization: [redacted]\npassword: [redacted]\nOPENAI_API_KEY= [redacted]",
+    );
   });
 
   it("refuses to send private-key material externally", () => {
