@@ -1,6 +1,6 @@
 # Pi Speak
 
-Pi Speak is an opt-in Pi extension that turns each completed assistant response into a short spoken update: what happened, the result that matters, and what needs you. It does not read raw Markdown, code, paths, URLs, diffs, or tool output aloud.
+Pi Speak is an opt-in Pi extension that turns each completed assistant response into a short direct spoken update: what happened, the result that matters, and what needs you. It does not read raw Markdown, code, paths, URLs, diffs, or tool output aloud.
 
 ## Requirements
 
@@ -12,8 +12,8 @@ Pi Speak is an opt-in Pi extension that turns each completed assistant response 
 
 `/speak` enables or disables narration for the current working directory. It starts disabled.
 
-- `/speak that` — speak the last response now.
-- `/speak resummarise more|less` — one-shot detailed or simpler re-summary.
+- `/speak prev` — speak the latest assistant response directly.
+- `/speak explain` — generate a one-shot independent explanation with the configured summary model.
 - `/speak off` / `/speak stop` — disable-and-stop or stop-only.
 - `/speak voice <name>` / `/speak rate <±N%>` — change live TTS settings.
 - `/speak config` — select an authenticated summary model; default is `openai-codex/gpt-5.4-mini`.

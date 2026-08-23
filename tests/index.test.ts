@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import extension from "../src/index.ts";
 
 describe("pi-speak extension", () => {
-  it("registers the speak command", () => {
+  it("describes the direct-response speak command", () => {
     const registerCommand = vi.fn();
 
     extension({
@@ -11,6 +11,10 @@ describe("pi-speak extension", () => {
       registerShortcut: vi.fn(),
     } as never);
 
-    expect(registerCommand).toHaveBeenCalledWith("speak", expect.any(Object));
+    const command = registerCommand.mock.calls.find(
+      ([name]) => name === "speak",
+    )?.[1];
+    expect(command.description).toContain("responses");
+    expect(command.description).not.toContain("summaries");
   });
 });

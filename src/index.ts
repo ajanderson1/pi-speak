@@ -13,7 +13,7 @@ export default function extension(pi: ExtensionAPI): void {
   pi.on("session_shutdown", () => controller.cancel());
 
   pi.registerCommand("speak", {
-    description: "Control spoken Pi summaries",
+    description: "Control spoken Pi responses",
     handler: async (args, ctx) => controller.handleCommand(args, ctx),
   });
   pi.registerShortcut("ctrl+shift+s", {

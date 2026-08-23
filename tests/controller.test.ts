@@ -180,6 +180,52 @@ describe("SpeakController", () => {
     );
   });
 
+  it("shows the direct-response help commands without legacy verbs", async () => {
+    const { controller, context } = createControllerFixture({
+      response: "I changed queue implementation.",
+    });
+
+    await controller.handleCommand("help", context);
+
+    expect(context.ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "prev, explain, off, stop, voice <name>, rate <±N%>, config, status, help",
+      ),
+      "info",
+    );
+    expect(context.ui.notify).not.toHaveBeenCalledWith(
+      expect.stringContaining("that"),
+      "info",
+    );
+    expect(context.ui.notify).not.toHaveBeenCalledWith(
+      expect.stringContaining("resummarise"),
+      "info",
+    );
+  });
+
+  it("shows the direct-response invalid-command list without legacy verbs", async () => {
+    const { controller, context } = createControllerFixture({
+      response: "I changed queue implementation.",
+    });
+
+    await controller.handleCommand("legacy", context);
+
+    expect(context.ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "prev, explain, off, stop, voice <name>, rate <±N%>, config, status, help",
+      ),
+      "info",
+    );
+    expect(context.ui.notify).not.toHaveBeenCalledWith(
+      expect.stringContaining("that"),
+      "info",
+    );
+    expect(context.ui.notify).not.toHaveBeenCalledWith(
+      expect.stringContaining("resummarise"),
+      "info",
+    );
+  });
+
   it("uses I and you in explainer instruction", () => {
     expect(EXPLANATION_SYSTEM_PROMPT).toContain("I");
     expect(EXPLANATION_SYSTEM_PROMPT).toContain("you");

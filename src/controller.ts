@@ -142,13 +142,13 @@ export class SpeakController {
     if (action === "help") {
       notice(
         ctx,
-        "Use /speak to toggle. Commands: prev, explain, off, stop, voice <name>, rate <±N%>, config, status.",
+        "Use /speak. Commands: prev, explain, off, stop, voice <name>, rate <±N%>, config, status, help.",
       );
       return;
     }
     notice(
       ctx,
-      "Use /speak [prev|explain|off|stop|voice <name>|rate <±N%>|config|status|help].",
+      "Use /speak. Commands: prev, explain, off, stop, voice <name>, rate <±N%>, config, status, help.",
     );
   }
 
@@ -179,7 +179,8 @@ export class SpeakController {
       if (spoken) void this.audio.enqueue(spoken, settings);
       else if (manual) notice(ctx, "Could not make a speech-safe summary.");
     } finally {
-      if (this.abortController === abortController) this.abortController = undefined;
+      if (this.abortController === abortController)
+        this.abortController = undefined;
     }
   }
 
@@ -212,7 +213,8 @@ export class SpeakController {
       if (spoken) void this.audio.enqueue(spoken, settings);
       else notice(ctx, "Could not make a speech-safe summary.");
     } finally {
-      if (this.abortController === abortController) this.abortController = undefined;
+      if (this.abortController === abortController)
+        this.abortController = undefined;
     }
   }
 }
