@@ -75,8 +75,6 @@ function pronounceTechnicalSymbols(text: string): string {
     .replace(/\//gu, " slash ")
     .replace(/\\/gu, " backslash ")
     .replace(/_/gu, " underscore ")
-    .replace(/-/gu, " dash ")
-    .replace(/:/gu, " colon ")
     .replace(/@/gu, " at ")
     .replace(/#/gu, " hash ")
     .replace(/\(/gu, " open parenthesis ")

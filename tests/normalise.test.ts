@@ -9,7 +9,7 @@ describe("normaliseForSpeech", () => {
 
     expect(spoken).toMatch(/src slash controller dot ts/i);
     expect(spoken).toMatch(
-      /https colon slash slash github dot com slash ajanderson1 slash pi dash speak/i,
+      /https slash slash github dot com slash ajanderson1 slash pi speak/i,
     );
     expect(spoken).toMatch(/const result equals user underscore id/i);
     expect(spoken).not.toContain("project file");
@@ -31,11 +31,15 @@ describe("normaliseForSpeech", () => {
       "Open `src/utils/foo-bar.ts` at https://api.example.com:8080/#v1. `value => next === result`.",
     );
 
-    expect(spoken).toMatch(/src slash utils slash foo dash bar dot ts/i);
+    expect(spoken).toMatch(/src slash utils slash foo bar dot ts/i);
     expect(spoken).toMatch(
-      /https colon slash slash api dot example dot com colon 8080 slash hash v1/i,
+      /https slash slash api dot example dot com 8080 slash hash v1/i,
     );
     expect(spoken).toMatch(/value maps to next strictly equals result/i);
+  });
+
+  it("treats dashes and colons as silent separators", () => {
+    expect(normaliseForSpeech("Read `foo-bar:baz`.")).toBe("Read foo bar baz.");
   });
 
   it("retains every sentence in a response", () => {

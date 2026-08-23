@@ -171,9 +171,7 @@ describe("SpeakController", () => {
     const [spoken] = enqueue.mock.calls[0] ?? [];
     expect(spoken).toMatch(/src slash index dot ts/i);
     expect(spoken).toMatch(/const retry underscore limit equals three/i);
-    expect(spoken).toMatch(
-      /https colon slash slash example dot com slash docs/i,
-    );
+    expect(spoken).toMatch(/https slash slash example dot com slash docs/i);
     expect(spoken).not.toMatch(/project file/i);
   });
 
