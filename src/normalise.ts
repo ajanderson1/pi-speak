@@ -59,10 +59,44 @@ function replaceNumber(match: string, unit?: string): string {
   return `${numberToWords(value)}${unit ? ` ${unit}` : ""}`;
 }
 
+function pronounceTechnicalSymbols(text: string): string {
+  return text
+    .replace(/!==/gu, " does not strictly equal ")
+    .replace(/===/gu, " strictly equals ")
+    .replace(/=>/gu, " maps to ")
+    .replace(/!=/gu, " does not equal ")
+    .replace(/==/gu, " equals ")
+    .replace(/>=/gu, " greater than or equal to ")
+    .replace(/<=/gu, " less than or equal to ")
+    .replace(/&&/gu, " and ")
+    .replace(/\|\|/gu, " or ")
+    .replace(/(?<=[\p{L}\p{N}_-])\.(?=[\p{L}\p{N}_-])/gu, " dot ")
+    .replace(/=/gu, " equals ")
+    .replace(/\//gu, " slash ")
+    .replace(/\\/gu, " backslash ")
+    .replace(/_/gu, " underscore ")
+    .replace(/-/gu, " dash ")
+    .replace(/:/gu, " colon ")
+    .replace(/@/gu, " at ")
+    .replace(/#/gu, " hash ")
+    .replace(/\(/gu, " open parenthesis ")
+    .replace(/\)/gu, " close parenthesis ")
+    .replace(/\[/gu, " open bracket ")
+    .replace(/\]/gu, " close bracket ")
+    .replace(/\{/gu, " open brace ")
+    .replace(/\}/gu, " close brace ")
+    .replace(/&/gu, " ampersand ")
+    .replace(/\|/gu, " pipe ")
+    .replace(/~/gu, " tilde ")
+    .replace(/\^/gu, " caret ")
+    .replace(/>/gu, " greater than ")
+    .replace(/</gu, " less than ");
+}
+
 export function normaliseForSpeech(response: string): string | undefined {
-  let text = response
-    .replace(/```[\p{L}\p{N}_-]*/gu, " ")
-    .replace(/(?<=[\p{L}])\.(?=[\p{L}])/gu, " ")
+  let text = pronounceTechnicalSymbols(
+    response.replace(/```[\p{L}\p{N}_-]*/gu, " "),
+  )
     .replace(/[^\p{L}\p{N}\s.!?,%$]/gu, " ")
     .replace(/\b(?:the\s+)?project\s+files?\b/giu, "")
     .replace(/\b[a-f\d]{7,40}\b/giu, "")
@@ -93,7 +127,7 @@ export function normaliseForSpeech(response: string): string | undefined {
     .replace(/\s+([.,!?])/gu, "$1")
     .trim();
 
-  const sentences = text.match(/[^.!?]+[.!?]?/gu)?.slice(0, 3) ?? [];
+  const sentences = text.match(/[^.!?]+[.!?]?/gu) ?? [];
   text = sentences
     .map((sentence) => {
       const trimmed = sentence.trim();

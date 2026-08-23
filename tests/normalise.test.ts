@@ -7,9 +7,11 @@ describe("normaliseForSpeech", () => {
       "Read **`src/controller.ts`** at https://github.com/ajanderson1/pi-speak.\n```ts\nconst result = user_id;\n```",
     );
 
-    expect(spoken).toMatch(/src controller ts/i);
-    expect(spoken).toMatch(/https github com ajanderson1 pi speak/i);
-    expect(spoken).toMatch(/const result user id/i);
+    expect(spoken).toMatch(/src slash controller dot ts/i);
+    expect(spoken).toMatch(
+      /https colon slash slash github dot com slash ajanderson1 slash pi dash speak/i,
+    );
+    expect(spoken).toMatch(/const result equals user underscore id/i);
     expect(spoken).not.toContain("project file");
     expect(spoken).not.toMatch(/[`/_=]/u);
   });
@@ -19,14 +21,34 @@ describe("normaliseForSpeech", () => {
       "```ts\nfunction greet(name) { return name; }\n```",
     );
 
-    expect(spoken).toMatch(/function greet name/i);
+    expect(spoken).toMatch(/function greet open parenthesis name/i);
     expect(spoken).toMatch(/return name/i);
     expect(spoken).not.toMatch(/[`{}()]/u);
   });
 
+  it("speaks technical separators and operators", () => {
+    const spoken = normaliseForSpeech(
+      "Open `src/utils/foo-bar.ts` at https://api.example.com:8080/#v1. `value => next === result`.",
+    );
+
+    expect(spoken).toMatch(/src slash utils slash foo dash bar dot ts/i);
+    expect(spoken).toMatch(
+      /https colon slash slash api dot example dot com colon 8080 slash hash v1/i,
+    );
+    expect(spoken).toMatch(/value maps to next strictly equals result/i);
+  });
+
+  it("retains every sentence in a response", () => {
+    const spoken = normaliseForSpeech(
+      "One complete sentence. Two complete sentence. Three complete sentence. Four complete sentence.",
+    );
+
+    expect(spoken).toContain("Four complete sentence.");
+  });
+
   it("never speaks the legacy generic file substitution", () => {
     expect(normaliseForSpeech("Read `src/index.ts` in the project file.")).toBe(
-      "Read src index ts in.",
+      "Read src slash index dot ts in.",
     );
   });
 
