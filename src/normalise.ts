@@ -97,7 +97,6 @@ export function normaliseForSpeech(response: string): string | undefined {
   )
     .replace(/[^\p{L}\p{N}\s.!?,%$]/gu, " ")
     .replace(/\b(?:the\s+)?project\s+files?\b/giu, "")
-    .replace(/\b[a-f\d]{7,40}\b/giu, "")
     .replace(/\bAPI\b/gu, "application programming interface")
     .replace(
       /\$(\d+)\.(\d{2})\b/gu,

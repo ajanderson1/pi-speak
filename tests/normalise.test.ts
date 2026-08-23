@@ -50,6 +50,12 @@ describe("normaliseForSpeech", () => {
     expect(spoken).toContain("Four complete sentence.");
   });
 
+  it("retains Git commit identifiers", () => {
+    expect(
+      normaliseForSpeech("Done: d621542 is installed on Atlas and Himalayas."),
+    ).toBe("Done d621542 is installed on Atlas and Himalayas.");
+  });
+
   it("never speaks the legacy generic file substitution", () => {
     expect(normaliseForSpeech("Read `src/index.ts` in the project file.")).toBe(
       "Read src slash index dot ts in.",
