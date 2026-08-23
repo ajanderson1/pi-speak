@@ -18,7 +18,6 @@ Pi Speak is an opt-in Pi extension that turns each completed assistant response 
 - `/speak voice <name>` / `/speak rate <±N%>` — change live TTS settings.
 - `/speak config` — select an authenticated explanation model; default is `openai-codex/gpt-5.4-mini`.
 - `/speak status` / `/speak help` — inspect configuration.
-- `Ctrl+Shift+S` — pause or resume active audio.
 
 Settings are stored per canonical working directory in `~/.pi/agent/extensions/pi-speak.json`.
 

@@ -16,8 +16,4 @@ export default function extension(pi: ExtensionAPI): void {
     description: "Control spoken Pi responses",
     handler: async (args, ctx) => controller.handleCommand(args, ctx),
   });
-  pi.registerShortcut("ctrl+shift+s", {
-    description: "Pause or resume current Pi Speak playback",
-    handler: async () => controller.pauseOrResume(),
-  });
 }
