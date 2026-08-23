@@ -2,18 +2,13 @@ import { complete } from "@earendil-works/pi-ai/compat";
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import type { ModelPreference } from "./config.ts";
 
-const SYSTEM_PROMPT = [
-  "Summarise this completed coding-agent response for speech.",
-  "Write one to three plain sentences, about forty words.",
-  "State what happened, the important concrete result or number, and what the human needs to do.",
-  "Drop preamble, caveats, repeated context, markdown, code, paths, URLs, hashes, and secrets.",
-].join(" ");
+export const EXPLANATION_SYSTEM_PROMPT =
+  "Explain completed coding-agent response in plain language someone with limited prior knowledge this project. Speak as agent using I, address human listener as you, preserve concrete outcomes next actions, omit markdown, code, paths, URLs, hashes, secrets.";
 
 export async function summarise(
   ctx: Pick<ExtensionContext, "modelRegistry">,
   modelPreference: ModelPreference,
   source: string,
-  detail: "normal" | "more" | "less" = "normal",
   signal?: AbortSignal,
 ): Promise<string | undefined> {
   const model = ctx.modelRegistry.find(
@@ -27,13 +22,11 @@ export async function summarise(
   const response = await complete(
     model,
     {
-      systemPrompt: SYSTEM_PROMPT,
+      systemPrompt: EXPLANATION_SYSTEM_PROMPT,
       messages: [
         {
           role: "user",
-          content: [
-            { type: "text", text: `Detail: ${detail}\n\nResponse:\n${source}` },
-          ],
+          content: [{ type: "text", text: source }],
           timestamp: Date.now(),
         },
       ],
@@ -42,7 +35,7 @@ export async function summarise(
       apiKey: auth.apiKey,
       ...(auth.headers ? { headers: auth.headers } : {}),
       ...(auth.env ? { env: auth.env } : {}),
-      maxTokens: detail === "more" ? 150 : detail === "less" ? 60 : 100,
+      maxTokens: 150,
       maxRetries: 0,
       cacheRetention: "none",
       timeoutMs: 4_000,

@@ -96,6 +96,10 @@ export class SpeakController {
       await this.narrateLatest(ctx, settings, true);
       return;
     }
+    if (action === "explain") {
+      await this.explainLatest(ctx, settings);
+      return;
+    }
     if (action === "voice" && value) {
       await this.save(ctx.cwd, { voice: value });
       notice(ctx, `Voice set to ${value}.`);
@@ -138,13 +142,13 @@ export class SpeakController {
     if (action === "help") {
       notice(
         ctx,
-        "Use /speak to toggle. Commands: prev, off, stop, voice <name>, rate <±N%>, config, status.",
+        "Use /speak to toggle. Commands: prev, explain, off, stop, voice <name>, rate <±N%>, config, status.",
       );
       return;
     }
     notice(
       ctx,
-      "Use /speak [prev|off|stop|voice <name>|rate <±N%>|config|status|help].",
+      "Use /speak [prev|explain|off|stop|voice <name>|rate <±N%>|config|status|help].",
     );
   }
 
@@ -153,7 +157,7 @@ export class SpeakController {
     settings: SpeakSettings,
     manual: boolean,
   ): Promise<void> {
-    const source = this.lastResponse ?? assistantText(ctx);
+    const source = assistantText(ctx) ?? this.lastResponse;
     if (!source) {
       if (manual) notice(ctx, "No substantive response to speak.");
       return;
@@ -175,8 +179,40 @@ export class SpeakController {
       if (spoken) void this.audio.enqueue(spoken, settings);
       else if (manual) notice(ctx, "Could not make a speech-safe summary.");
     } finally {
-      if (this.abortController === abortController)
-        this.abortController = undefined;
+      if (this.abortController === abortController) this.abortController = undefined;
+    }
+  }
+
+  private async explainLatest(
+    ctx: ExtensionContext,
+    settings: SpeakSettings,
+  ): Promise<void> {
+    const source = assistantText(ctx) ?? this.lastResponse;
+    if (!source) {
+      notice(ctx, "No substantive response to speak.");
+      return;
+    }
+    const protectedText = redactForExternalUse(source);
+    if (!protectedText.safe) {
+      notice(ctx, "Skipped a response containing sensitive material.");
+      return;
+    }
+    this.abortController?.abort();
+    const abortController = new AbortController();
+    this.abortController = abortController;
+    try {
+      const explanation = await this.explain(
+        { modelRegistry: ctx.modelRegistry },
+        settings.model,
+        protectedText.text,
+        abortController.signal,
+      );
+      if (this.abortController !== abortController) return;
+      const spoken = explanation ? normaliseForSpeech(explanation) : undefined;
+      if (spoken) void this.audio.enqueue(spoken, settings);
+      else notice(ctx, "Could not make a speech-safe summary.");
+    } finally {
+      if (this.abortController === abortController) this.abortController = undefined;
     }
   }
 }
