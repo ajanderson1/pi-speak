@@ -59,19 +59,12 @@ function replaceNumber(match: string, unit?: string): string {
   return `${numberToWords(value)}${unit ? ` ${unit}` : ""}`;
 }
 
-export function normaliseForSpeech(summary: string): string | undefined {
-  let text = summary
-    .replace(/```[\s\S]*?```/gu, "")
-    .replace(/`[^`]*`/gu, "the project file")
-    .replace(/https?:\/\/\S+/gu, "")
-    .replace(/(?:~\/|\.\.?\/|\/)[\w./-]+/gu, "the project file")
-    .replace(
-      /\b[\w-]+\.(?:ts|tsx|js|json|md|ya?ml|toml|py|sh)\b/giu,
-      "the project file",
-    )
+export function normaliseForSpeech(response: string): string | undefined {
+  let text = response
+    .replace(/```[\p{L}\p{N}_-]*/gu, " ")
+    .replace(/(?<=[\p{L}])\.(?=[\p{L}])/gu, " ")
+    .replace(/[^\p{L}\p{N}\s.!?,%$]/gu, " ")
     .replace(/\b[a-f\d]{7,40}\b/giu, "")
-    .replace(/\*{1,3}|#{1,6}|[_[\]{}<>|]/gu, " ")
-    .replace(/;/gu, ".")
     .replace(/\bAPI\b/gu, "application programming interface")
     .replace(
       /\$(\d+)\.(\d{2})\b/gu,
@@ -107,5 +100,5 @@ export function normaliseForSpeech(summary: string): string | undefined {
     })
     .filter(Boolean)
     .join(" ");
-  return text && !/[`_/]|https?:\/\//u.test(text) ? text : undefined;
+  return text && !/[`_/]/u.test(text) ? text : undefined;
 }

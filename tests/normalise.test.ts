@@ -2,20 +2,26 @@ import { describe, expect, it } from "vitest";
 import { normaliseForSpeech } from "../src/normalise.ts";
 
 describe("normaliseForSpeech", () => {
-  it("removes code and paths while expanding money and units", () => {
-    expect(
-      normaliseForSpeech("Fixed `src/foo_bar.ts`; saved $42.50 in 8GB."),
-    ).toBe(
-      "Fixed the project file. Saved forty-two dollars fifty in eight gigabytes.",
+  it("retains formatted technical text while stripping its special characters", () => {
+    const spoken = normaliseForSpeech(
+      "Read **`src/controller.ts`** at https://github.com/ajanderson1/pi-speak.\n```ts\nconst result = user_id;\n```",
     );
+
+    expect(spoken).toMatch(/src controller ts/i);
+    expect(spoken).toMatch(/https github com ajanderson1 pi speak/i);
+    expect(spoken).toMatch(/const result user id/i);
+    expect(spoken).not.toContain("project file");
+    expect(spoken).not.toMatch(/[`/_=]/u);
   });
 
-  it("removes URLs and commit hashes", () => {
-    const text = normaliseForSpeech(
-      "See https://example.test/a and commit a1b2c3d4.",
+  it("retains identifiers from fenced code", () => {
+    const spoken = normaliseForSpeech(
+      "```ts\nfunction greet(name) { return name; }\n```",
     );
 
-    expect(text).not.toMatch(/https|a1b2c3d4/);
+    expect(spoken).toMatch(/function greet name/i);
+    expect(spoken).toMatch(/return name/i);
+    expect(spoken).not.toMatch(/[`{}()]/u);
   });
 
   it("expands common acronyms and percentages", () => {

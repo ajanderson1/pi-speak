@@ -1,6 +1,6 @@
 # Pi Speak
 
-Pi Speak is an opt-in Pi extension that turns each completed assistant response into a short direct spoken update: what happened, the result that matters, and what needs you. It does not read raw Markdown, code, paths, URLs, diffs, or tool output aloud.
+Pi Speak is an opt-in Pi extension that turns each completed assistant response into a short direct spoken update. It strips Markdown formatting and special characters while retaining the response’s prose and technical text, including code blocks, paths, and URLs.
 
 ## Requirements
 
