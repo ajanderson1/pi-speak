@@ -115,7 +115,7 @@ export class SpeakController {
         .getAll()
         .filter((model) => model.input.includes("text"));
       const choices = models.map((model) => `${model.provider}/${model.id}`);
-      const choice = await ctx.ui.select("Pi Speak summariser model", choices);
+      const choice = await ctx.ui.select("Pi Speak explanation model", choices);
       if (!choice) return;
       const [provider, ...idParts] = choice.split("/");
       const id = idParts.join("/");
@@ -129,7 +129,7 @@ export class SpeakController {
         return;
       }
       await this.save(ctx.cwd, { model: { provider, id } });
-      notice(ctx, `Summariser model set to ${choice}.`);
+      notice(ctx, `Explanation model set to ${choice}.`);
       return;
     }
     if (action === "status") {
@@ -212,6 +212,9 @@ export class SpeakController {
       const spoken = explanation ? normaliseForSpeech(explanation) : undefined;
       if (spoken) void this.audio.enqueue(spoken, settings);
       else notice(ctx, "Could not make a speech-safe summary.");
+    } catch {
+      if (abortController.signal.aborted) return;
+      notice(ctx, "Explanation generation failed.");
     } finally {
       if (this.abortController === abortController)
         this.abortController = undefined;

@@ -180,6 +180,20 @@ describe("SpeakController", () => {
     );
   });
 
+  it("notifies when the explainer rejects during speak explain", async () => {
+    const { controller, context, explain } = createControllerFixture({
+      response: "I changed queue implementation.",
+    });
+    explain.mockRejectedValueOnce(new Error("boom"));
+
+    await controller.handleCommand("explain", context);
+
+    expect(context.ui.notify).toHaveBeenCalledWith(
+      "Explanation generation failed.",
+      "info",
+    );
+  });
+
   it("shows the direct-response help commands without legacy verbs", async () => {
     const { controller, context } = createControllerFixture({
       response: "I changed queue implementation.",
