@@ -3,7 +3,7 @@ import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import type { ModelPreference } from "./config.ts";
 
 export const EXPLANATION_SYSTEM_PROMPT =
-  "Explain completed coding-agent response in plain language someone with limited prior knowledge this project. Speak as agent using I, address human listener as you, preserve concrete outcomes next actions, omit markdown, code, paths, URLs, hashes, secrets.";
+  "Explain the completed coding-agent response in plain language to someone with limited prior knowledge of this project. Speak as the agent using I, and address the listener as you. Preserve concrete outcomes, next actions, and exact technical content, including code, paths, and URLs; omit secrets only. Never replace technical content with generic descriptions. Do not use the phrase project file.";
 
 export async function summarise(
   ctx: Pick<ExtensionContext, "modelRegistry">,

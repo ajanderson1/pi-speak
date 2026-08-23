@@ -24,6 +24,12 @@ describe("normaliseForSpeech", () => {
     expect(spoken).not.toMatch(/[`{}()]/u);
   });
 
+  it("never speaks the legacy generic file substitution", () => {
+    expect(normaliseForSpeech("Read `src/index.ts` in the project file.")).toBe(
+      "Read src index ts in.",
+    );
+  });
+
   it("expands common acronyms and percentages", () => {
     expect(normaliseForSpeech("The API returned 20% faster.")).toBe(
       "The application programming interface returned twenty percent faster.",

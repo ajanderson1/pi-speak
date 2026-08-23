@@ -159,6 +159,22 @@ describe("SpeakController", () => {
     );
   });
 
+  it("passes formatted assistant text directly to audio without generic substitution", async () => {
+    const { controller, context, enqueue, explain } = createControllerFixture({
+      response:
+        "Implemented **`src/index.ts`** and verified the release is ready for you to inspect.\n```ts\nconst retry_limit = 3;\n```\nOpen https://example.com/docs, then reload Pi to use the update.",
+    });
+
+    await controller.handleSettled(context);
+
+    expect(explain).not.toHaveBeenCalled();
+    const [spoken] = enqueue.mock.calls[0] ?? [];
+    expect(spoken).toMatch(/src index ts/i);
+    expect(spoken).toMatch(/const retry limit three/i);
+    expect(spoken).toMatch(/https example com docs/i);
+    expect(spoken).not.toMatch(/project file/i);
+  });
+
   it("uses independent explainer only for speak explain", async () => {
     const { controller, context, explain, enqueue } = createControllerFixture({
       response: "I changed queue implementation.",
@@ -244,5 +260,11 @@ describe("SpeakController", () => {
     expect(EXPLANATION_SYSTEM_PROMPT).toContain("I");
     expect(EXPLANATION_SYSTEM_PROMPT).toContain("you");
     expect(EXPLANATION_SYSTEM_PROMPT).toMatch(/limited prior knowledge/i);
+    expect(EXPLANATION_SYSTEM_PROMPT).toContain(
+      "Never replace technical content with generic descriptions.",
+    );
+    expect(EXPLANATION_SYSTEM_PROMPT).toContain(
+      "Do not use the phrase project file.",
+    );
   });
 });
