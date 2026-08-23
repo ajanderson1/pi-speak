@@ -6,7 +6,12 @@ import { qualifiesForSpeech } from "./response.ts";
 import { redactForExternalUse } from "./safety.ts";
 import { summarise } from "./summarise.ts";
 
-type Detail = "normal" | "more" | "less";
+export interface SpeakControllerDependencies {
+  readonly audio?: Pick<AudioQueue, "enqueue" | "stop" | "pauseOrResume">;
+  readonly load?: typeof loadSettings;
+  readonly save?: typeof saveSettings;
+  readonly explain?: typeof summarise;
+}
 
 function assistantText(ctx: ExtensionContext): string | undefined {
   const entry = ctx.sessionManager
@@ -33,9 +38,22 @@ function notice(ctx: ExtensionContext, message: string): void {
 }
 
 export class SpeakController {
-  private readonly audio = new AudioQueue();
+  private readonly audio: Pick<
+    AudioQueue,
+    "enqueue" | "stop" | "pauseOrResume"
+  >;
+  private readonly load: typeof loadSettings;
+  private readonly save: typeof saveSettings;
+  private readonly explain: typeof summarise;
   private abortController: AbortController | undefined;
   private lastResponse: string | undefined;
+
+  constructor(dependencies: SpeakControllerDependencies = {}) {
+    this.audio = dependencies.audio ?? new AudioQueue();
+    this.load = dependencies.load ?? loadSettings;
+    this.save = dependencies.save ?? saveSettings;
+    this.explain = dependencies.explain ?? summarise;
+  }
 
   cancel(): void {
     this.abortController?.abort();
@@ -48,23 +66,23 @@ export class SpeakController {
   }
 
   async handleSettled(ctx: ExtensionContext): Promise<void> {
-    const settings = await loadSettings(ctx.cwd);
+    const settings = await this.load(ctx.cwd);
     if (!settings.enabled) return;
-    await this.speakLatest(ctx, settings, "normal", false);
+    await this.narrateLatest(ctx, settings, false);
   }
 
   async handleCommand(args: string, ctx: ExtensionContext): Promise<void> {
     const [action = "", value = ""] = args.trim().split(/\s+/u);
-    const settings = await loadSettings(ctx.cwd);
+    const settings = await this.load(ctx.cwd);
 
     if (!action) {
-      const next = await saveSettings(ctx.cwd, { enabled: !settings.enabled });
+      const next = await this.save(ctx.cwd, { enabled: !settings.enabled });
       notice(ctx, `Pi Speak ${next.enabled ? "on" : "off"}.`);
       if (!next.enabled) this.cancel();
       return;
     }
     if (action === "off") {
-      await saveSettings(ctx.cwd, { enabled: false });
+      await this.save(ctx.cwd, { enabled: false });
       this.cancel();
       notice(ctx, "Pi Speak off.");
       return;
@@ -74,21 +92,17 @@ export class SpeakController {
       notice(ctx, "Speech stopped.");
       return;
     }
-    if (action === "that") {
-      await this.speakLatest(ctx, settings, "normal", true);
-      return;
-    }
-    if (action === "resummarise" && (value === "more" || value === "less")) {
-      await this.speakLatest(ctx, settings, value, true);
+    if (action === "prev") {
+      await this.narrateLatest(ctx, settings, true);
       return;
     }
     if (action === "voice" && value) {
-      await saveSettings(ctx.cwd, { voice: value });
+      await this.save(ctx.cwd, { voice: value });
       notice(ctx, `Voice set to ${value}.`);
       return;
     }
     if (action === "rate" && /^[-+]\d+%$/u.test(value)) {
-      await saveSettings(ctx.cwd, { rate: value });
+      await this.save(ctx.cwd, { rate: value });
       notice(ctx, `Rate set to ${value}.`);
       return;
     }
@@ -110,7 +124,7 @@ export class SpeakController {
         notice(ctx, "That model is not authenticated.");
         return;
       }
-      await saveSettings(ctx.cwd, { model: { provider, id } });
+      await this.save(ctx.cwd, { model: { provider, id } });
       notice(ctx, `Summariser model set to ${choice}.`);
       return;
     }
@@ -124,27 +138,27 @@ export class SpeakController {
     if (action === "help") {
       notice(
         ctx,
-        "Use /speak to toggle. Commands: that, resummarise more|less, off, stop, voice <name>, rate <±N%>, config, status.",
+        "Use /speak to toggle. Commands: prev, off, stop, voice <name>, rate <±N%>, config, status.",
       );
       return;
     }
     notice(
       ctx,
-      "Use /speak [that|resummarise more|less|off|stop|voice <name>|rate <±N%>|config|status|help].",
+      "Use /speak [prev|off|stop|voice <name>|rate <±N%>|config|status|help].",
     );
   }
 
-  private async speakLatest(
+  private async narrateLatest(
     ctx: ExtensionContext,
     settings: SpeakSettings,
-    detail: Detail,
     manual: boolean,
   ): Promise<void> {
     const source = this.lastResponse ?? assistantText(ctx);
-    if (!source || !qualifiesForSpeech(source, settings.minimumWords)) {
+    if (!source) {
       if (manual) notice(ctx, "No substantive response to speak.");
       return;
     }
+    if (!manual && !qualifiesForSpeech(source, settings.minimumWords)) return;
     const protectedText = redactForExternalUse(source);
     if (!protectedText.safe) {
       if (manual)
@@ -156,20 +170,10 @@ export class SpeakController {
     const abortController = new AbortController();
     this.abortController = abortController;
     try {
-      const result = await summarise(
-        ctx,
-        settings.model,
-        protectedText.text,
-        detail,
-        abortController.signal,
-      );
+      const spoken = normaliseForSpeech(protectedText.text);
       if (this.abortController !== abortController) return;
-      const spoken = result ? normaliseForSpeech(result) : undefined;
       if (spoken) void this.audio.enqueue(spoken, settings);
       else if (manual) notice(ctx, "Could not make a speech-safe summary.");
-    } catch {
-      if (manual && !abortController.signal.aborted)
-        notice(ctx, "Summary generation failed.");
     } finally {
       if (this.abortController === abortController)
         this.abortController = undefined;
