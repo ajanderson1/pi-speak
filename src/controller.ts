@@ -68,7 +68,7 @@ export class SpeakController {
   async handleSettled(ctx: ExtensionContext): Promise<void> {
     const settings = await this.load(ctx.cwd);
     if (!settings.enabled) return;
-    await this.narrateLatest(ctx, settings, false);
+    await this.speakLatest(ctx, settings, false);
   }
 
   async handleCommand(args: string, ctx: ExtensionContext): Promise<void> {
@@ -92,12 +92,11 @@ export class SpeakController {
       notice(ctx, "Speech stopped.");
       return;
     }
-    if (action === "prev") {
-      await this.narrateLatest(ctx, settings, true);
-      return;
-    }
-    if (action === "explain") {
-      await this.explainLatest(ctx, settings);
+    // "prev" and "explain" are the same manual replay now that the
+    // summariser runs by default; both are kept so neither muscle memory
+    // nor scripts that call one of them break.
+    if (action === "prev" || action === "explain") {
+      await this.speakLatest(ctx, settings, true);
       return;
     }
     if (action === "voice" && value) {
@@ -111,9 +110,14 @@ export class SpeakController {
       return;
     }
     if (action === "config") {
-      const models = ctx.modelRegistry
-        .getAll()
-        .filter((model) => model.input.includes("text"));
+      // Prefer the models Pi itself is scoped to (--models / enabledModels,
+      // the same set `/scoped-models` shows). Only fall back to the full
+      // authenticated catalogue when the session has no scoping configured,
+      // so this list doesn't balloon to every provider Pi knows about.
+      const scoped = ctx.scopedModels.map((scopedModel) => scopedModel.model);
+      const candidates =
+        scoped.length > 0 ? scoped : ctx.modelRegistry.getAvailable();
+      const models = candidates.filter((model) => model.input.includes("text"));
       const choices = models.map((model) => `${model.provider}/${model.id}`);
       const choice = await ctx.ui.select("Pi Speak explanation model", choices);
       if (!choice) return;
@@ -142,17 +146,25 @@ export class SpeakController {
     if (action === "help") {
       notice(
         ctx,
-        "Use /speak. Commands: prev, explain, off, stop, voice <name>, rate <±N%>, config, status, help.",
+        "Use /speak. Commands: prev, off, stop, voice <name>, rate <±N%>, config, status, help.",
       );
       return;
     }
     notice(
       ctx,
-      "Use /speak. Commands: prev, explain, off, stop, voice <name>, rate <±N%>, config, status, help.",
+      "Use /speak. Commands: prev, off, stop, voice <name>, rate <±N%>, config, status, help.",
     );
   }
 
-  private async narrateLatest(
+  /**
+   * Runs a completed response through the cheap summariser model — a TLDR
+   * sentence first, then a faithful, speech-safe narration of the rest —
+   * and speaks the result. This is now the default path for both the
+   * automatic post-response narration and a manual replay; there is no
+   * longer a separate raw pass-through, because reading raw markdown,
+   * paths, and code symbol-by-symbol proved unintelligible.
+   */
+  private async speakLatest(
     ctx: ExtensionContext,
     settings: SpeakSettings,
     manual: boolean,
@@ -174,34 +186,6 @@ export class SpeakController {
     const abortController = new AbortController();
     this.abortController = abortController;
     try {
-      const spoken = normaliseForSpeech(protectedText.text);
-      if (this.abortController !== abortController) return;
-      if (spoken) void this.audio.enqueue(spoken, settings);
-      else if (manual) notice(ctx, "Could not make a speech-safe summary.");
-    } finally {
-      if (this.abortController === abortController)
-        this.abortController = undefined;
-    }
-  }
-
-  private async explainLatest(
-    ctx: ExtensionContext,
-    settings: SpeakSettings,
-  ): Promise<void> {
-    const source = assistantText(ctx) ?? this.lastResponse;
-    if (!source) {
-      notice(ctx, "No substantive response to speak.");
-      return;
-    }
-    const protectedText = redactForExternalUse(source);
-    if (!protectedText.safe) {
-      notice(ctx, "Skipped a response containing sensitive material.");
-      return;
-    }
-    this.abortController?.abort();
-    const abortController = new AbortController();
-    this.abortController = abortController;
-    try {
       const explanation = await this.explain(
         { modelRegistry: ctx.modelRegistry },
         settings.model,
@@ -211,10 +195,10 @@ export class SpeakController {
       if (this.abortController !== abortController) return;
       const spoken = explanation ? normaliseForSpeech(explanation) : undefined;
       if (spoken) void this.audio.enqueue(spoken, settings);
-      else notice(ctx, "Could not make a speech-safe summary.");
+      else if (manual) notice(ctx, "Could not make a speech-safe summary.");
     } catch {
       if (abortController.signal.aborted) return;
-      notice(ctx, "Explanation generation failed.");
+      if (manual) notice(ctx, "Explanation generation failed.");
     } finally {
       if (this.abortController === abortController)
         this.abortController = undefined;
